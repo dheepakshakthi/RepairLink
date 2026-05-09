@@ -27,6 +27,14 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(globalLimiter);
 
+app.get("/api/v1/health", (req, res) => res.json({ status: "ok" }));
+app.get("/", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "RepairLink backend is running",
+  });
+});
+
 // Mount all module routers under /api/v1
 app.use("/api/v1/auth", require("./modules/auth/auth.routes"));
 app.use("/api/v1/tickets", require("./modules/tickets/ticket.routes"));
@@ -35,7 +43,6 @@ app.use("/api/v1/delivery", require("./modules/delivery/delivery.routes"));
 app.use("/api/v1/notifications", require("./modules/notifications/notification.routes"));
 app.use("/api/v1", require("./modules/reviews/review.routes"));
 app.use("/api/v1/admin", require("./modules/admin/admin.routes"));
-app.get("/api/v1/health", (req, res) => res.json({ status: "ok" }));
 
 // Mount 404 handler
 app.use((req, res, next) => {
