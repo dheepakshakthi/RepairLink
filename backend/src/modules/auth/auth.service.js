@@ -1,20 +1,21 @@
-const crypto = require('crypto');
-const { v4: uuidv4 } = require('uuid');
-const jwt = require('jsonwebtoken');
-const User = require('../../models/User');
-const Provider = require('../../models/Provider');
-const VerificationToken = require('../../models/VerificationToken');
-const PasswordResetToken = require('../../models/PasswordResetToken');
-const EmailService = require('../../services/EmailService');
-const ApiError = require('../../utils/ApiError');
+const crypto = require("crypto");
+const { v4: uuidv4 } = require("uuid");
+const jwt = require("jsonwebtoken");
+const User = require("../../models/User");
+const Provider = require("../../models/Provider");
+const VerificationToken = require("../../models/VerificationToken");
+const PasswordResetToken = require("../../models/PasswordResetToken");
+const EmailService = require("../../services/EmailService");
+const ApiError = require("../../utils/ApiError");
 
-const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
+const hashToken = (token) =>
+  crypto.createHash("sha256").update(token).digest("hex");
 
 class AuthService {
   async register(data) {
     const existingUser = await User.findOne({ email: data.email });
     if (existingUser) {
-      throw new ApiError(400, 'Email already registered');
+      throw new ApiError(400, "Email already registered");
     }
 
     const user = await User.create({
@@ -22,14 +23,15 @@ class AuthService {
       email: data.email,
       passwordHash: data.password, // Pre-save hook hashes this
       role: data.role,
-      phone: data.phone
+      phone: data.phone,
     });
 
-    if (user.role === 'provider') {
+    if (user.role === "provider") {
       await Provider.create({
         userId: user._id,
-        shopName: 'TBD',
-        approvalStatus: 'pending'
+        shopName: data.shopName || "TBD",
+        serviceCategories: data.serviceCategories || [],
+        approvalStatus: "pending",
       });
     }
 
@@ -39,7 +41,7 @@ class AuthService {
     await VerificationToken.create({
       userId: user._id,
       tokenHash,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
     });
 
     await EmailService.sendVerificationEmail(user, token);
@@ -51,14 +53,14 @@ class AuthService {
   }
 
   async login(email, password) {
-    const user = await User.findOne({ email }).select('+passwordHash');
+    const user = await User.findOne({ email }).select("+passwordHash");
     if (!user) {
-      throw new ApiError(401, 'Invalid credentials');
+      throw new ApiError(401, "Invalid credentials");
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      throw new ApiError(401, 'Invalid credentials');
+      throw new ApiError(401, "Invalid credentials");
     }
 
     // TODO: Re-enable email verification for production
@@ -67,7 +69,7 @@ class AuthService {
     // }
 
     if (!user.isActive) {
-      throw new ApiError(403, 'Account suspended');
+      throw new ApiError(403, "Account suspended");
     }
 
     // TODO: Re-enable provider approval check for production
@@ -97,19 +99,19 @@ class AuthService {
 
   async refreshToken(oldRefreshToken) {
     if (!oldRefreshToken) {
-      throw new ApiError(401, 'Refresh token not found');
+      throw new ApiError(401, "Refresh token not found");
     }
 
     let decoded;
     try {
       decoded = jwt.verify(oldRefreshToken, process.env.JWT_REFRESH_SECRET);
     } catch (err) {
-      throw new ApiError(401, 'Invalid refresh token');
+      throw new ApiError(401, "Invalid refresh token");
     }
 
     const user = await User.findById(decoded.id);
     if (!user) {
-      throw new ApiError(401, 'User not found');
+      throw new ApiError(401, "User not found");
     }
 
     const hashedOld = hashToken(oldRefreshToken);
@@ -117,10 +119,10 @@ class AuthService {
       // Possible token reuse attack, clear all tokens
       user.refreshTokens = [];
       await user.save();
-      throw new ApiError(401, 'Invalid refresh token');
+      throw new ApiError(401, "Invalid refresh token");
     }
 
-    user.refreshTokens = user.refreshTokens.filter(t => t !== hashedOld);
+    user.refreshTokens = user.refreshTokens.filter((t) => t !== hashedOld);
 
     const newAccessToken = user.generateAccessToken();
     const newRefreshToken = user.generateRefreshToken();
@@ -136,7 +138,7 @@ class AuthService {
     if (refreshToken) {
       const hashed = hashToken(refreshToken);
       await User.findByIdAndUpdate(userId, {
-        $pull: { refreshTokens: hashed }
+        $pull: { refreshTokens: hashed },
       });
     }
   }
@@ -144,7 +146,7 @@ class AuthService {
   async verifyEmail(email, token) {
     const user = await User.findOne({ email });
     if (!user) {
-      throw new ApiError(404, 'User not found');
+      throw new ApiError(404, "User not found");
     }
 
     if (user.isVerified) {
@@ -155,11 +157,11 @@ class AuthService {
     const verifyDoc = await VerificationToken.findOne({
       userId: user._id,
       tokenHash: hashed,
-      expiresAt: { $gt: new Date() }
+      expiresAt: { $gt: new Date() },
     });
 
     if (!verifyDoc) {
-      throw new ApiError(400, 'Invalid or expired verification token');
+      throw new ApiError(400, "Invalid or expired verification token");
     }
 
     user.isVerified = true;
@@ -183,7 +185,7 @@ class AuthService {
     await PasswordResetToken.create({
       userId: user._id,
       tokenHash,
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
     });
 
     await EmailService.sendPasswordResetEmail(user, token);
@@ -193,16 +195,16 @@ class AuthService {
     const hashed = hashToken(token);
     const resetDoc = await PasswordResetToken.findOne({
       tokenHash: hashed,
-      expiresAt: { $gt: new Date() }
+      expiresAt: { $gt: new Date() },
     });
 
     if (!resetDoc) {
-      throw new ApiError(400, 'Invalid or expired password reset token');
+      throw new ApiError(400, "Invalid or expired password reset token");
     }
 
     const user = await User.findById(resetDoc.userId);
     if (!user) {
-      throw new ApiError(404, 'User not found');
+      throw new ApiError(404, "User not found");
     }
 
     user.passwordHash = newPassword;
@@ -216,24 +218,24 @@ class AuthService {
     const user = await User.findByIdAndUpdate(
       userId,
       { $set: data },
-      { new: true, runValidators: true }
-    ).select('-passwordHash -refreshTokens');
+      { new: true, runValidators: true },
+    ).select("-passwordHash -refreshTokens");
 
     if (!user) {
-      throw new ApiError(404, 'User not found');
+      throw new ApiError(404, "User not found");
     }
     return user;
   }
 
   async changePassword(userId, oldPassword, newPassword) {
-    const user = await User.findById(userId).select('+passwordHash');
+    const user = await User.findById(userId).select("+passwordHash");
     if (!user) {
-      throw new ApiError(404, 'User not found');
+      throw new ApiError(404, "User not found");
     }
 
     const isMatch = await user.comparePassword(oldPassword);
     if (!isMatch) {
-      throw new ApiError(400, 'Incorrect old password');
+      throw new ApiError(400, "Incorrect old password");
     }
 
     user.passwordHash = newPassword;

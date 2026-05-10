@@ -40,7 +40,10 @@ app.use("/api/v1/auth", require("./modules/auth/auth.routes"));
 app.use("/api/v1/tickets", require("./modules/tickets/ticket.routes"));
 app.use("/api/v1", require("./modules/bids/bid.routes"));
 app.use("/api/v1/delivery", require("./modules/delivery/delivery.routes"));
-app.use("/api/v1/notifications", require("./modules/notifications/notification.routes"));
+app.use(
+  "/api/v1/notifications",
+  require("./modules/notifications/notification.routes"),
+);
 app.use("/api/v1", require("./modules/reviews/review.routes"));
 app.use("/api/v1/admin", require("./modules/admin/admin.routes"));
 
