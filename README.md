@@ -1,9 +1,4 @@
-# RepairLink — Master Implementation Prompt
-
-> **How to use this prompt:**
-> Feed this document (or any numbered section of it) to an AI coding assistant (Claude Code, Cursor, Copilot, etc.) or use it as your authoritative project specification. Each section is self-contained and sequenced. Work through phases in order. Every phase ends with a checklist — do not proceed until all items are green.
-
----
+# RepairLink 
 
 ## 0. Context & ground rules (read first, always)
 
