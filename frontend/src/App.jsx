@@ -6,41 +6,21 @@ import AppRoutes from './routes/AppRoutes';
 import { getMe } from './features/auth/authSlice';
 import { io } from 'socket.io-client';
 
-export const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
+export const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', {
   autoConnect: false,
   withCredentials: true,
 });
 
 function AppContent() {
   const dispatch = useDispatch();
-
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
-    if (token) {
-      dispatch(getMe());
-      socket.auth = { token };
-      socket.connect();
-    }
-    return () => {
-      socket.disconnect();
-    };
+    if (token) { dispatch(getMe()); socket.auth = { token }; socket.connect(); }
+    return () => { socket.disconnect(); };
   }, [dispatch]);
-
-  return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-        <AppRoutes />
-      </div>
-    </BrowserRouter>
-  );
+  return <BrowserRouter><AppRoutes /></BrowserRouter>;
 }
 
-function App() {
-  return (
-    <Provider store={store}>
-      <AppContent />
-    </Provider>
-  );
+export default function App() {
+  return <Provider store={store}><AppContent /></Provider>;
 }
-
-export default App;

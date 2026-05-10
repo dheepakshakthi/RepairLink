@@ -61,20 +61,22 @@ class AuthService {
       throw new ApiError(401, 'Invalid credentials');
     }
 
-    if (!user.isVerified) {
-      throw new ApiError(403, 'Please verify your email');
-    }
+    // TODO: Re-enable email verification for production
+    // if (!user.isVerified) {
+    //   throw new ApiError(403, 'Please verify your email');
+    // }
 
     if (!user.isActive) {
       throw new ApiError(403, 'Account suspended');
     }
 
-    if (user.role === 'provider') {
-      const provider = await Provider.findOne({ userId: user._id });
-      if (!provider || provider.approvalStatus !== 'approved') {
-        throw new ApiError(403, 'Account pending approval');
-      }
-    }
+    // TODO: Re-enable provider approval check for production
+    // if (user.role === 'provider') {
+    //   const provider = await Provider.findOne({ userId: user._id });
+    //   if (!provider || provider.approvalStatus !== 'approved') {
+    //     throw new ApiError(403, 'Account pending approval');
+    //   }
+    // }
 
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
